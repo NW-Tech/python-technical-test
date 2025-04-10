@@ -41,5 +41,8 @@ lint.select = [
     "B",   # flake8-bugbear
     "RUF"  # Ruff-specific rules
     ]
+exclude = [
+    "app/infrastructure/migrations/versions/*"
+]
 line-length = 100
 target-version = "py310"
