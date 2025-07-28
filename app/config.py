@@ -2,7 +2,6 @@ import os
 from functools import lru_cache
 
 from dotenv import load_dotenv
-from pydantic import PostgresDsn
 from pydantic_settings import BaseSettings
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../.env"))

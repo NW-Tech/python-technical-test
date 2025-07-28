@@ -2,14 +2,11 @@ from datetime import datetime
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.db import get_session
 from app.infrastructure.models.group import Group
 from app.infrastructure.models.group_type import GroupType
 from app.infrastructure.models.site import Site
-from app.main import app
 
 pytestmark = pytest.mark.asyncio
 

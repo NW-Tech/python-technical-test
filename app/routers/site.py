@@ -9,7 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies.security import get_current_user
 from app.infrastructure.db import get_session
 from app.infrastructure.models.group import Group
-from app.infrastructure.models.group_type import GroupType
 from app.infrastructure.models.site import Site
 
 router = APIRouter(prefix="/sites", tags=["Sites"])
