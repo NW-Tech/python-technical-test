@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Boolean, Column, Integer, String
 from sqlalchemy.orm import relationship
 
 from app.infrastructure.db import Base
@@ -14,8 +14,8 @@ class GroupType(Base):
         - group3
         - ...
 
-    This replaces the fixed enum and allows flexible grouping logic
-    without needing to redeploy code when a new type is introduced.
+    The `can_be_associated_with_site` field controls whether
+    groups of this type can be associated with sites.
     """
 
     __tablename__ = "group_types"
@@ -23,5 +23,6 @@ class GroupType(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True, nullable=False)
+    can_be_associated_with_site = Column(Boolean, nullable=False, default=True)
 
     groups = relationship("Group", back_populates="type")

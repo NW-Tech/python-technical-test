@@ -29,6 +29,8 @@ class Site(Base):
     installation_date = Column(Date, nullable=False)
     max_power_megawatt = Column(Float, nullable=False)
     min_power_megawatt = Column(Float, nullable=False)
-    useful_energy_at_1_megawatt = Column(Float, nullable=False)
+    useful_energy_at_1_megawatt = Column(Float, nullable=True)
+    efficiency = Column(Float, nullable=True)
+    country = Column(String, nullable=False)
 
     groups = relationship("Group", secondary=site_group_association, back_populates="sites")

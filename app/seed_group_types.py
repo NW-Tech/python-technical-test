@@ -14,9 +14,14 @@ async def seed_group_types():
     async for session in get_session():
         result = await session.execute(select(GroupType))
         existing_names = {row.name for row in result.scalars()}
-        desired_names = {"group3", "group2", "group1"}
 
-        to_insert = [GroupType(name=name) for name in desired_names if name not in existing_names]
+        desired_types = {"group1": True, "group2": True, "group3": False}
+
+        to_insert = [
+            GroupType(name=name, can_be_associated_with_site=can_associate)
+            for name, can_associate in desired_types.items()
+            if name not in existing_names
+        ]
 
         if to_insert:
             session.add_all(to_insert)
