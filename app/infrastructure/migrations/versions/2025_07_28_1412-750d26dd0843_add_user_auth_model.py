@@ -1,8 +1,8 @@
-"""add tables
+"""add User auth model
 
-Revision ID: 394a9fce1cf1
+Revision ID: 750d26dd0843
 Revises: 
-Create Date: 2025-07-28 12:12:59.374386
+Create Date: 2025-07-28 14:12:10.084494
 
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "394a9fce1cf1"
+revision: str = "750d26dd0843"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -24,6 +24,7 @@ def upgrade() -> None:
         "group_types",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("name", sa.String(), nullable=False),
+        sa.Column("can_be_associated_with_site", sa.Boolean(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("name"),
     )
@@ -34,8 +35,18 @@ def upgrade() -> None:
         sa.Column("installation_date", sa.Date(), nullable=False),
         sa.Column("max_power_megawatt", sa.Float(), nullable=False),
         sa.Column("min_power_megawatt", sa.Float(), nullable=False),
-        sa.Column("useful_energy_at_1_megawatt", sa.Float(), nullable=False),
+        sa.Column("useful_energy_at_1_megawatt", sa.Float(), nullable=True),
+        sa.Column("efficiency", sa.Float(), nullable=True),
+        sa.Column("country", sa.String(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_table(
+        "users",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("username", sa.String(), nullable=False),
+        sa.Column("hashed_password", sa.String(), nullable=False),
+        sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("username"),
     )
     op.create_table(
         "groups",
@@ -69,6 +80,7 @@ def downgrade() -> None:
     op.drop_table("site_group_association")
     op.drop_table("group_group_association")
     op.drop_table("groups")
+    op.drop_table("users")
     op.drop_table("sites")
     op.drop_table("group_types")
     # ### end Alembic commands ###

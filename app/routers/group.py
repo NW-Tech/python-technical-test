@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
+from app.dependencies.security import get_current_user
 from app.infrastructure.db import get_session
 from app.infrastructure.models.group import Group
 
@@ -38,6 +39,7 @@ async def list_groups(
     sort_by: Optional[str] = Query("id", description="Sort field"),
     desc: bool = Query(False, description="Descending sort"),
     session: AsyncSession = Depends(get_session),
+    user: str = Depends(get_current_user),
 ):
     query = select(Group)
 
@@ -55,7 +57,11 @@ async def list_groups(
 
 
 @router.post("/", response_model=GroupOut, status_code=201)
-async def create_group(data: GroupCreate, session: AsyncSession = Depends(get_session)):
+async def create_group(
+    data: GroupCreate,
+    session: AsyncSession = Depends(get_session),
+    user: str = Depends(get_current_user),
+):
     group = Group(**data.dict())
     session.add(group)
     await session.commit()
@@ -65,7 +71,10 @@ async def create_group(data: GroupCreate, session: AsyncSession = Depends(get_se
 
 @router.put("/{group_id}", response_model=GroupOut)
 async def update_group(
-    group_id: int, data: GroupUpdate, session: AsyncSession = Depends(get_session)
+    group_id: int,
+    data: GroupUpdate,
+    session: AsyncSession = Depends(get_session),
+    user: str = Depends(get_current_user),
 ):
     result = await session.execute(select(Group).where(Group.id == group_id))
     group = result.scalar_one_or_none()
@@ -82,7 +91,11 @@ async def update_group(
 
 
 @router.delete("/{group_id}", status_code=204)
-async def delete_group(group_id: int, session: AsyncSession = Depends(get_session)):
+async def delete_group(
+    group_id: int,
+    session: AsyncSession = Depends(get_session),
+    user: str = Depends(get_current_user),
+):
     result = await session.execute(select(Group).where(Group.id == group_id))
     group = result.scalar_one_or_none()
 

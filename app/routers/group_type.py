@@ -1,5 +1,3 @@
-# app/routers/group_type.py
-
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -8,6 +6,7 @@ from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
+from app.dependencies.security import get_current_user
 from app.infrastructure.db import get_session
 from app.infrastructure.models.group_type import GroupType
 
@@ -39,6 +38,7 @@ async def list_group_types(
     sort_by: Optional[str] = Query("id", description="Field to sort by"),
     desc: bool = Query(False, description="Sort descending"),
     session: AsyncSession = Depends(get_session),
+    user: str = Depends(get_current_user),
 ):
     query = select(GroupType)
 
@@ -54,7 +54,11 @@ async def list_group_types(
 
 
 @router.post("/", response_model=GroupTypeOut, status_code=201)
-async def create_group_type(data: GroupTypeCreate, session: AsyncSession = Depends(get_session)):
+async def create_group_type(
+    data: GroupTypeCreate,
+    session: AsyncSession = Depends(get_session),
+    user: str = Depends(get_current_user),
+):
     existing = await session.execute(select(GroupType).where(GroupType.name == data.name))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="GroupType with this name already exists")
@@ -68,7 +72,10 @@ async def create_group_type(data: GroupTypeCreate, session: AsyncSession = Depen
 
 @router.put("/{group_type_id}", response_model=GroupTypeOut)
 async def update_group_type(
-    group_type_id: int, data: GroupTypeUpdate, session: AsyncSession = Depends(get_session)
+    group_type_id: int,
+    data: GroupTypeUpdate,
+    session: AsyncSession = Depends(get_session),
+    user: str = Depends(get_current_user),
 ):
     result = await session.execute(select(GroupType).where(GroupType.id == group_type_id))
     group_type = result.scalar_one_or_none()
@@ -85,7 +92,11 @@ async def update_group_type(
 
 
 @router.delete("/{group_type_id}", status_code=204)
-async def delete_group_type(group_type_id: int, session: AsyncSession = Depends(get_session)):
+async def delete_group_type(
+    group_type_id: int,
+    session: AsyncSession = Depends(get_session),
+    user: str = Depends(get_current_user),
+):
     result = await session.execute(select(GroupType).where(GroupType.id == group_type_id))
     group_type = result.scalar_one_or_none()
 

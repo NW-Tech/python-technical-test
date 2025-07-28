@@ -12,6 +12,7 @@ from app.infrastructure.models.associations import group_group_association, site
 from app.infrastructure.models.group import Group
 from app.infrastructure.models.group_type import GroupType
 from app.infrastructure.models.site import Site
+from app.infrastructure.models.user import User
 
 config = context.config
 
