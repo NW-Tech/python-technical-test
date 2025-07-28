@@ -11,6 +11,7 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../.env"))
 class Settings(BaseSettings):
     db_url: str
     db_test_url: str
+    secret_key: str
     pythonpath: str | None = None
     postgres_db: str | None = None
     postgres_user: str | None = None
@@ -19,6 +20,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        extra = "forbid"
 
 
 @lru_cache
