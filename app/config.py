@@ -5,11 +5,16 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    db_url: PostgresDsn
-    db_test_url: PostgresDsn
+    db_url: str
+    db_test_url: str
+    pythonpath: str | None = None
+    postgres_db: str | None = None
+    postgres_user: str | None = None
+    postgres_password: str | None = None
 
     class Config:
         env_file = ".env"
+        env_file_encoding = "utf-8"
 
 
 @lru_cache
