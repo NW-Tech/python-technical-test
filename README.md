@@ -66,3 +66,16 @@ docker compose up
 The project should be available at `http://localhost:8000/docs`.
 
 You can find some other useful commands in the Makefile.
+
+
+---
+
+rm app/infrastructure/migrations/versions/*.py
+
+find . -type d -name "__pycache__" -exec rm -r {} +
+
+alembic -c alembic.ini upgrade head 
+
+alembic revision --autogenerate -m ""
+
+poetry run uvicorn app.main:app --reload
