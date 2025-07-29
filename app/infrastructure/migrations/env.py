@@ -6,11 +6,14 @@ from config import get_settings
 from sqlalchemy.engine import Connection
 
 from app.infrastructure.db import Base, engine
-from app.infrastructure.models.associations import group_group_association, site_group_association
-from app.infrastructure.models.group import Group
-from app.infrastructure.models.group_type import GroupType
-from app.infrastructure.models.site import Site
-from app.infrastructure.models.user import User
+from app.infrastructure.models.associations import (  # noqa: F401
+    group_group_association,
+    site_group_association,
+)
+from app.infrastructure.models.group import Group  # noqa: F401
+from app.infrastructure.models.group_type import GroupType  # noqa: F401
+from app.infrastructure.models.site import Site  # noqa: F401
+from app.infrastructure.models.user import User  # noqa: F401
 
 config = context.config
 

@@ -45,3 +45,9 @@ lint.select = [
     ]
 line-length = 100
 target-version = "py310"
+exclude = [
+    "app/infrastructure/migrations/versions/*",
+]
+
+[tool.ruff.per-file-ignores]
+"app/infrastructure/models/*.py" = ["RUF012"]

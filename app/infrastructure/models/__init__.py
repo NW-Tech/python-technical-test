@@ -1,5 +1,5 @@
-from .associations import group_group_association, site_group_association
-from .group import Group
-from .group_type import GroupType
-from .site import Site
-from .user import User
+from .associations import group_group_association, site_group_association  # noqa: F401
+from .group import Group  # noqa: F401
+from .group_type import GroupType  # noqa: F401
+from .site import Site  # noqa: F401
+from .user import User  # noqa: F401

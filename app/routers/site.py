@@ -1,10 +1,12 @@
+# ruff: noqa: B008
+
 from datetime import datetime
-from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.dependencies.security import get_current_user
 from app.infrastructure.db import get_session
@@ -20,9 +22,9 @@ class SiteBase(BaseModel):
     installation_date: datetime
     max_power_megawatt: float
     min_power_megawatt: float
-    useful_energy_at_1_megawatt: Optional[float] = None
-    efficiency: Optional[float] = None
-    group_ids: Optional[List[int]] = Field(default_factory=list)
+    useful_energy_at_1_megawatt: float | None
+    efficiency: float | None
+    group_ids: list[int] | None
 
     @field_validator("country")
     @classmethod
@@ -52,48 +54,49 @@ class SiteCreate(SiteBase):
 
 
 class SiteUpdate(BaseModel):
-    name: Optional[str]
-    country: Optional[str]
-    installation_date: Optional[datetime]
-    max_power_megawatt: Optional[float]
-    min_power_megawatt: Optional[float]
-    useful_energy_at_1_megawatt: Optional[float]
-    efficiency: Optional[float]
-    group_ids: Optional[List[int]] = None
+    name: str | None
+    country: str | None
+    installation_date: datetime | None
+    max_power_megawatt: float | None
+    min_power_megawatt: float | None
+    useful_energy_at_1_megawatt: float | None
+    efficiency: float | None
+    group_ids: list[int] | None
 
 
 class SiteOut(SiteBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
-async def validate_group_associations(session: AsyncSession, group_ids: List[int]):
+async def validate_group_associations(session: AsyncSession, group_ids: list[int]):
     if not group_ids:
         return
 
-    stmt = select(Group).where(Group.id.in_(group_ids))
+    stmt = select(Group).where(Group.id.in_(group_ids)).options(selectinload(Group.type))
     result = await session.execute(stmt)
     groups = result.scalars().all()
 
     for group in groups:
         if group.type and not group.type.can_be_associated_with_site:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Group '{group.name}' of type '{group.type.name}' cannot be associated with a site.",
+            message = (
+                f"Group '{group.name}' of type '{group.type.name}' "
+                "cannot be associated with a site."
             )
+            raise HTTPException(status_code=400, detail=message)
 
 
-@router.get("/", response_model=List[SiteOut])
+@router.get("/", response_model=list[SiteOut])
 async def list_sites(
-    name: Optional[str] = Query(None),
-    sort_by: Optional[str] = Query("id"),
+    name: str = Query(None),
+    sort_by: str = Query("id"),
     desc: bool = Query(False),
     session: AsyncSession = Depends(get_session),
     user: str = Depends(get_current_user),
 ):
-    query = select(Site)
+    query = select(Site).options(selectinload(Site.groups))
     if name:
         query = query.where(Site.name.ilike(f"%{name}%"))
     if hasattr(Site, sort_by):
@@ -103,7 +106,18 @@ async def list_sites(
         query = query.order_by(sort_column)
 
     result = await session.execute(query)
-    return result.scalars().all()
+    sites = result.scalars().all()
+    return [
+        SiteOut.model_validate(
+            {
+                **site.__dict__,
+                "group_ids": [g.id for g in site.groups] if site.groups else [],
+                "id": site.id,
+            },
+            from_attributes=True,
+        )
+        for site in sites
+    ]
 
 
 @router.post("/", response_model=SiteOut)
@@ -131,7 +145,7 @@ async def create_site(
 
     await validate_group_associations(session, data.group_ids)
 
-    site = Site(**data.dict(exclude={"group_ids"}))
+    site = Site(**data.model_dump(exclude={"group_ids"}))
     if data.group_ids:
         stmt = select(Group).where(Group.id.in_(data.group_ids))
         result = await session.execute(stmt)
@@ -139,8 +153,18 @@ async def create_site(
 
     session.add(site)
     await session.commit()
-    await session.refresh(site)
-    return site
+    result = await session.execute(
+        select(Site).options(selectinload(Site.groups)).where(Site.id == site.id)
+    )
+    site = result.scalar_one()
+    return SiteOut.model_validate(
+        {
+            **site.__dict__,
+            "group_ids": [g.id for g in site.groups] if site.groups else [],
+            "id": site.id,
+        },
+        from_attributes=True,
+    )
 
 
 @router.put("/{site_id}", response_model=SiteOut)
@@ -189,8 +213,18 @@ async def update_site(
             setattr(site, key, value)
 
     await session.commit()
-    await session.refresh(site)
-    return site
+    result = await session.execute(
+        select(Site).options(selectinload(Site.groups)).where(Site.id == site.id)
+    )
+    site = result.scalar_one()
+    return SiteOut.model_validate(
+        {
+            **site.__dict__,
+            "group_ids": [g.id for g in site.groups] if site.groups else [],
+            "id": site.id,
+        },
+        from_attributes=True,
+    )
 
 
 @router.delete("/{site_id}")

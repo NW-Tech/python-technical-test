@@ -16,9 +16,9 @@ class Group(Base):
 
     Relationships:
         type (GroupType): Type of this group.
-        sites (List[Site]): Many-to-many sites in the group.
-        children (List[Group]): Sub-groups contained by this group.
-        parents (List[Group]): Groups that contain this group.
+        sites (list[Site]): Many-to-many sites in the group.
+        children (list[Group]): Sub-groups contained by this group.
+        parents (list[Group]): Groups that contain this group.
     """
 
     __tablename__ = "groups"

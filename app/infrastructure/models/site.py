@@ -34,3 +34,7 @@ class Site(Base):
     country = Column(String, nullable=False)
 
     groups = relationship("Group", secondary=site_group_association, back_populates="sites")
+
+    @property
+    def group_ids(self):
+        return [g.id for g in self.groups] if self.groups else []

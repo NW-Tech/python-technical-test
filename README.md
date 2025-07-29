@@ -65,10 +65,21 @@ Setup & Installation
 ### Via Docker
 
 ```
+docker compose build --no-cache
+```
+
+```
 docker compose up
 ```
 
 API will be available at: `http://localhost:8000/docs`
+
+Deleting pycache
+------------------
+
+```
+find . -type d -name "__pycache__" -exec rm -r {} +
+```
 
 Running Migrations
 ------------------

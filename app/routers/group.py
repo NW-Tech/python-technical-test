@@ -1,4 +1,4 @@
-from typing import List, Optional
+# ruff: noqa: B008
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -22,21 +22,21 @@ class GroupCreate(GroupBase):
 
 
 class GroupUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=2, max_length=100)
-    type_id: Optional[int]
+    name: str = Field(None, min_length=2, max_length=100)
+    type_id: int
 
 
 class GroupOut(GroupBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
-@router.get("/", response_model=List[GroupOut])
+@router.get("/", response_model=list[GroupOut])
 async def list_groups(
-    name: Optional[str] = Query(None, description="Filter by group name"),
-    sort_by: Optional[str] = Query("id", description="Sort field"),
+    name: str = Query(None, description="Filter by group name"),
+    sort_by: str = Query("id", description="Sort field"),
     desc: bool = Query(False, description="Descending sort"),
     session: AsyncSession = Depends(get_session),
     user: str = Depends(get_current_user),
