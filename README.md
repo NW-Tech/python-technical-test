@@ -30,6 +30,81 @@ Business Rules
   - Use `efficiency` instead of `useful_energy_at_1_megawatt`.
 - **Sites cannot be added to groups of type `group3`**
 
+Data Model Overview
+-------------------
+
+This section describes the current database schema for the "python-technical-test" project, including each table and their relationships, followed by suggestions for future evolution.
+
+![ER Diagram](python-technical-test.png)
+
+1. Tables and Purpose
+---------------------
+
+- **alembic_version**  
+  Tracks applied migration versions.
+
+- **users**  
+  - `id` (integer, PK)  
+  - `username` (varchar, unique)  
+  - `hashed_password` (varchar)  
+  Stores application users.
+
+- **group_types**  
+  - `id` (serial, PK)  
+  - `name` (varchar, unique)  
+  - `can_be_associated_with_site` (boolean)  
+  Defines types (e.g., “group1”, “group2”) and whether they are allowed on sites.
+
+- **groups**  
+  - `id` (serial, PK)  
+  - `name` (varchar)  
+  - `type_id` (integer, FK → group_types.id)  
+  Represents organizational units that can contain sites or other groups.
+
+- **group_group_association**  
+  - `parent_group_id` (integer, FK → groups.id)  
+  - `child_group_id` (integer, FK → groups.id)  
+  Self-referential many-to-many: groups containing sub-groups.
+
+- **sites**  
+  - `id` (serial, PK)  
+  - `name` (varchar)  
+  - `installation_date` (date)  
+  - `max_power_megawatt` (double precision)  
+  - `min_power_megawatt` (double precision)  
+  - `useful_energy_at_1_megawatt` (double precision, nullable)  
+  - `efficiency` (double precision, nullable)  
+  - `country` (varchar)  
+  Records each installation; FR sites require `useful_energy_at_1_megawatt`, IT sites require `efficiency`.
+
+- **site_group_association**  
+  - `site_id` (integer, FK → sites.id)  
+  - `group_id` (integer, FK → groups.id)  
+  Many-to-many linking sites to groups.
+
+2. Relationships
+----------------
+
+- **Sites ↔ Groups**: Many-to-many via **site_group_association**.
+- **Groups ↔ Groups**: Recursive many-to-many via **group_group_association**.
+- **Groups → GroupTypes**: Each group has one type.
+
+3. Future Evolution & Best Practices
+------------------------------------
+
+To support growing requirements and maintain flexibility, consider:
+
+- **Audit Fields**: Add `created_at`, `updated_at`, and `created_by_id` (FK → users.id) to track who and when data changes occur.
+- **Soft Deletes**: Include a boolean `is_active` or `deleted_at` timestamp rather than hard-deleting rows.
+- **Country‑Specific Configuration**: Instead of adding columns per country, introduce a `site_types` table and a generic JSON/`properties` column, or use table inheritance/polymorphic models, reducing code changes when new site types arrive.
+- **Database‑Enforced Business Rules**: Implement database constraints or triggers for:  
+  - Only one French site per day.  
+  - Italian sites only on weekends.  
+- **Modular Audit Logging**: Use an audit/logging extension (e.g., `pg_audit` or a separate history table) for comprehensive change tracking.
+
+**Current Delivery**  
+The provided schema uses direct columns for country-specific fields and enforces business logic at the application level. The above suggestions can be phased in as the product scales to reduce application code maintenance and improve data integrity.
+
 Setup & Installation
 --------------------
 
@@ -47,6 +122,11 @@ Setup & Installation
    ```
 
 3. Run migrations:
+
+   ```
+   cd app/
+   ```
+
    ```
    alembic upgrade head
    ```
