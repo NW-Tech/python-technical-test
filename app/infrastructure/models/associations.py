@@ -2,7 +2,7 @@ from sqlalchemy import Column, ForeignKey, Table
 
 from app.infrastructure.db import Base
 
-# Relacionamento Site <-> Group (muitos para muitos)
+# Site <-> Group (Many-To-Many)
 site_group_association = Table(
     "site_group_association",
     Base.metadata,
@@ -12,7 +12,7 @@ site_group_association = Table(
 )
 
 
-# Relacionamento recursivo Group <-> Group (muitos para muitos)
+# Group <-> Group (Many-To-Many)
 group_group_association = Table(
     "group_group_association",
     Base.metadata,

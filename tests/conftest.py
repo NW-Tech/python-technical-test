@@ -24,7 +24,6 @@ async def create_test_db():
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 
-    # cria usuário admin após as tabelas
     async with AsyncSessionLocal() as session:
         hashed_pw = pwd_context.hash("password")
         session.add(User(username="admin", hashed_password=hashed_pw))

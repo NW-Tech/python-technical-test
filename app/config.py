@@ -9,6 +9,8 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../.env"))
 
 class Settings(BaseSettings):
     db_url: str
+    db_host: str
+    db_port: str
     db_test_url: str
     secret_key: str
     pythonpath: str | None = None

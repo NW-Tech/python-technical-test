@@ -62,7 +62,7 @@ async def create_group(
     session: AsyncSession = Depends(get_session),
     user: str = Depends(get_current_user),
 ):
-    group = Group(**data.dict())
+    group = Group(**data.model_dump())
     session.add(group)
     await session.commit()
     await session.refresh(group)
@@ -82,7 +82,7 @@ async def update_group(
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
 
-    for key, value in data.dict(exclude_unset=True).items():
+    for key, value in data.model_dump(exclude_unset=True).items():
         setattr(group, key, value)
 
     await session.commit()

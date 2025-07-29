@@ -110,7 +110,6 @@ async def test_delete_group(async_session, client):
     )
     assert response.status_code == 204
 
-    # Check if really deleted
     response = await client.get("/groups/", headers={"Authorization": f"Bearer {token}"})
     assert all(g["id"] != group.id for g in response.json())
 

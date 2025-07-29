@@ -82,7 +82,7 @@ async def update_group_type(
     if not group_type:
         raise HTTPException(status_code=404, detail="GroupType not found")
 
-    for key, value in data.dict(exclude_unset=True).items():
+    for key, value in data.model_dump(exclude_unset=True).items():
         setattr(group_type, key, value)
 
     await session.commit()
