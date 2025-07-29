@@ -1,68 +1,242 @@
-# python-technical-test
 
-In this project, we manage data related to `sites` and `groups`. Sites represent individual installations, each with its own unique characteristics and attributes. On the other hand, groups serve as organizational units, grouping together sites based on common characteristics or functionalities.
+python-technical-test
+======================
 
-By effectively managing both sites and groups within our system, we can efficiently organize and analyze data, enabling better decision-making and optimization of operations.
+This project manages data related to **Sites** and **Groups**, allowing flexible associations and country-specific business logic.
 
-**Candidates are encouraged to feel free to use libraries of their choice and are welcome to include any additional enhancements they deem necessary or beneficial, such as unit tests, documentation, or performance optimizations. All additions that improve the overall quality and maintainability of the codebase are highly appreciated.**
+Overview
+--------
 
-## Project Description
+Sites represent individual installations with technical parameters, while Groups organize these sites by shared characteristics. Each group can contain multiple sites or subgroups (recursive). Country-specific logic applies to sites in France and Italy, with extendibility for more.
 
-### 1. Create the necessary models
+Project Structure
+-----------------
 
-**At least** two models are required:
+- FastAPI app with modular routers (`/sites`, `/groups`, `/group_types`, `/auth`)
+- SQLAlchemy models with Alembic migrations
+- JWT-based authentication
+- Full CRUD, filtering, and sorting
+- Test suite with Pytest
+- Seed scripts for initial data
+- Docker-ready setup
 
-#### Sites
-- `id` (integer)
-- `name` (string)
-- `installation_date` (date)
-- `max_power_megawatt` (float)
-- `min_power_megawatt` (float)
-- `useful_energy_at_1_megawatt` (float)
+Business Rules
+--------------
 
-#### Groups
-- `id` (integer)
-- `name` (string)
-- `type` (enum [group1, group2, group3])
+- **French Sites**:
+  - Only one can be installed per day.
+- **Italian Sites**:
+  - Must be installed on weekends.
+  - Use `efficiency` instead of `useful_energy_at_1_megawatt`.
+- **Sites cannot be added to groups of type `group3`**
 
+Data Model Overview
+-------------------
 
-A site can belong to multiple groups.  
-A group can contain multiple sites.  
-A group can contain multiple groups.
+This section describes the current database schema for the "python-technical-test" project, including each table and their relationships, followed by suggestions for future evolution.
 
-### 2. Create the necessary CRUD routes
+![ER Diagram](python-technical-test.png)
 
-We require the follwing routes:
-- GET / POST / PATCH / DELETE `/sites`
-- GET / POST / PATCH / DELETE `/groups`
+1. Tables and Purpose
+---------------------
 
-Candidates are encouraged to implement filtering and sorting options in these routes to enhance the usability and flexibility of the API.
+- **alembic_version**  
+  Tracks applied migration versions.
 
-### 3. Additional Requirements
+- **users**  
+  - `id` (integer, PK)  
+  - `username` (varchar, unique)  
+  - `hashed_password` (varchar)  
+  Stores application users.
 
-Currently, we only have french sites, but we want to add italian sites. These italian sites do not use the field `useful_energy_at_1_megawatt`. Instead, they have a field `efficiency` (float) specific to Italy.
+- **group_types**  
+  - `id` (serial, PK)  
+  - `name` (varchar, unique)  
+  - `can_be_associated_with_site` (boolean)  
+  Defines types (e.g., “group1”, “group2”) and whether they are allowed on sites.
 
-Integrate these new Italian sites. (Many new countries with specific fields might be added in the future).
+- **groups**  
+  - `id` (serial, PK)  
+  - `name` (varchar)  
+  - `type_id` (integer, FK → group_types.id)  
+  Represents organizational units that can contain sites or other groups.
 
-### 4. Integrate Business Logics
-- Only one French site can be installed per day.
-- Italian sites must be installed on weekends.
-- No site can be associated with `group.type == "group3"`.
+- **group_group_association**  
+  - `parent_group_id` (integer, FK → groups.id)  
+  - `child_group_id` (integer, FK → groups.id)  
+  Self-referential many-to-many: groups containing sub-groups.
 
-## Development
+- **sites**  
+  - `id` (serial, PK)  
+  - `name` (varchar)  
+  - `installation_date` (date)  
+  - `max_power_megawatt` (double precision)  
+  - `min_power_megawatt` (double precision)  
+  - `useful_energy_at_1_megawatt` (double precision, nullable)  
+  - `efficiency` (double precision, nullable)  
+  - `country` (varchar)  
+  Records each installation; FR sites require `useful_energy_at_1_megawatt`, IT sites require `efficiency`.
 
-### Prerequisites
-- `docker` for installation
-- `poetry` (https://python-poetry.org/) can be useful to manage dependencies (but not mandatory) 
+- **site_group_association**  
+  - `site_id` (integer, FK → sites.id)  
+  - `group_id` (integer, FK → groups.id)  
+  Many-to-many linking sites to groups.
 
+2. Relationships
+----------------
 
-### Run the project
+- **Sites ↔ Groups**: Many-to-many via **site_group_association**.
+- **Groups ↔ Groups**: Recursive many-to-many via **group_group_association**.
+- **Groups → GroupTypes**: Each group has one type.
 
-Create the `.env` file in the root folder then run:
+3. Future Evolution & Best Practices
+------------------------------------
+
+To support growing requirements and maintain flexibility, consider:
+
+- **Audit Fields**: Add `created_at`, `updated_at`, and `created_by_id` (FK → users.id) to track who and when data changes occur.
+- **Soft Deletes**: Include a boolean `is_active` or `deleted_at` timestamp rather than hard-deleting rows.
+- **Country‑Specific Configuration**: Instead of adding columns per country, introduce a `site_types` table and a generic JSON/`properties` column, or use table inheritance/polymorphic models, reducing code changes when new site types arrive.
+- **Database‑Enforced Business Rules**: Implement database constraints or triggers for:  
+  - Only one French site per day.  
+  - Italian sites only on weekends.  
+- **Modular Audit Logging**: Use an audit/logging extension (e.g., `pg_audit` or a separate history table) for comprehensive change tracking.
+
+**Current Delivery**  
+The provided schema uses direct columns for country-specific fields and enforces business logic at the application level. The above suggestions can be phased in as the product scales to reduce application code maintenance and improve data integrity.
+
+Setup & Installation
+--------------------
+
+### Via Uvicorn (local dev)
+
+1. Create virtual environment:
+   ```
+   python -m venv .venv
+   source .venv/bin/activate
+   ```
+
+2. Install dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+
+3. Run migrations:
+
+   ```
+   cd app/
+   ```
+
+   ```
+   alembic upgrade head
+   ```
+
+4. Seed initial data:
+   ```
+   python app/seed_user.py
+   python app/seed_group_types.py
+   ```
+
+5. Run the API:
+   ```
+   uvicorn app.main:app --reload
+   ```
+
+### Via Docker
+
+```
+docker compose build --no-cache
+```
+
 ```
 docker compose up
 ```
 
-The project should be available at `http://localhost:8000/docs`.
+API will be available at: `http://localhost:8000/docs`
 
-You can find some other useful commands in the Makefile.
+Deleting pycache
+------------------
+
+```
+find . -type d -name "__pycache__" -exec rm -r {} +
+```
+
+Running Migrations
+------------------
+
+Create:
+```
+alembic revision --autogenerate -m "migration message"
+```
+
+Apply:
+```
+alembic upgrade head
+```
+
+Reset:
+```
+rm app/infrastructure/migrations/versions/*.py
+```
+
+Testing
+-------
+
+Run all tests:
+```
+pytest
+```
+
+Test coverage includes:
+- French/Italian site creation & validation
+- Filtering, sorting, updating, and deleting sites/groups/group_types
+- Auth and token validation
+- Error handling for invalid inputs or constraints
+
+Endpoints Summary
+-----------------
+
+### /auth
+- `POST /auth/login` – Get token with username/password
+
+### /sites
+- `GET` – List sites (with filters/sorting)
+- `POST` – Create site with validations
+- `PATCH` – Update a site
+- `DELETE` – Delete a site
+
+### /groups
+- `GET` – List groups (filter by name, sort)
+- `POST` – Create group
+- `PUT` – Update group
+- `DELETE` – Delete group
+
+### /group_types
+- `GET` – List types
+- `POST` – Create type (no duplicates)
+- `PUT` – Update
+- `DELETE` – Remove
+
+Good Practices
+--------------
+
+- Structured modular layout (`routers`, `models`, `utils`, `db`)
+- Pydantic validation at request layer
+- Async SQLAlchemy sessions with FastAPI dependencies
+- JWT token with expiration for security
+- Clear naming & business logic encapsulation
+- Strict test coverage before deployment
+
+Developer Shortcuts
+-------------------
+
+- Run API: `make run` or `uvicorn app.main:app --reload`
+- Seed DB: `python app/seed_user.py`, `app/seed_group_types.py`
+- Format: `black . && isort .`
+- Lint: `flake8 .`
+- Test: `pytest`
+
+Author
+------
+
+Developed as part of a technical test demonstrating best practices, robustness, and adaptability for future extensions.
